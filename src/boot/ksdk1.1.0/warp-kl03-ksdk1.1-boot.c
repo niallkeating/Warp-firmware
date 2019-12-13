@@ -121,6 +121,8 @@ void                    repeatRegisterReadForDeviceAndAddress(WarpSensorDevice w
                                 uint16_t pullupValue, bool autoIncrement, int chunkReadsPerAddress, bool chatty,
                                 int spinDelay, int repetitionsPerAddress, uint16_t sssupplyMillivolts,
                                 uint16_t adaptiveSssupplyMaxMillivolts, uint8_t referenceByte);
+void                    getRawData(volatile WarpI2CDeviceState *  i2cDeviceState,
+                                WarpStatus  (* readSensorRegisterFunction)(uint8_t deviceRegister,  int numberOfBytes));
 int                    char2int(int character);
 void                    enableSssupply(uint16_t voltageMillivolts);
 void                    disableSssupply(void);
@@ -1201,6 +1203,7 @@ main(void)
 #ifdef WARP_BUILD_ENABLE_DEVAS7263
     initAS7263(    0x49    /* i2cAddress */,    &deviceAS7263State    );
 #endif
+
 
 #ifdef WARP_BUILD_ENABLE_DEVRV8803C7
   initRV8803C7(0x32 /* i2cAddress */, &deviceRV8803C7State);
@@ -2374,7 +2377,10 @@ main(void)
             }
                 
             case ' ':
-                
+            {
+                getRawData(&deviceTCS34725State, &readSensorRegisterTCS34725);
+                   
+            }
 
             /*
              *    Ignore naked returns.
@@ -2407,187 +2413,11 @@ printAllSensors(bool printHeadersAndCalibration, bool hexModeFlag, int menuDelay
      */
     uint32_t    readingCount = 0;
     uint32_t    numberOfConfigErrors = 0;
-
-
-    #ifdef WARP_BUILD_ENABLE_DEVAMG8834
-    numberOfConfigErrors += configureSensorAMG8834(    0x3F,/* Initial reset */
-                    0x01,/* Frame rate 1 FPS */
-                    i2cPullupValue
-                    );
-    #endif
-    #ifdef WARP_BUILD_ENABLE_DEVMMA8451Q
-    numberOfConfigErrors += configureSensorMMA8451Q(0x00,/* Payload: Disable FIFO */
-                    0x01,/* Normal read 8bit, 800Hz, normal, active mode */
-                    i2cPullupValue
-                    );
-    #endif
-    #ifdef WARP_BUILD_ENABLE_DEVMAG3110
-    numberOfConfigErrors += configureSensorMAG3110(    0x00,/*    Payload: DR 000, OS 00, 80Hz, ADC 1280, Full 16bit, standby mode to set up register*/
-                    0xA0,/*    Payload: AUTO_MRST_EN enable, RAW value without offset */
-                    i2cPullupValue
-                    );
-    #endif
-    #ifdef WARP_BUILD_ENABLE_DEVL3GD20H
-    numberOfConfigErrors += configureSensorL3GD20H(    0b11111111,/* ODR 800Hz, Cut-off 100Hz, see table 21, normal mode, x,y,z enable */
-                    0b00100000,
-                    0b00000000,/* normal mode, disable FIFO, disable high pass filter */
-                    i2cPullupValue
-                    );
-    #endif
-    #ifdef WARP_BUILD_ENABLE_DEVBME680
-    numberOfConfigErrors += configureSensorBME680(    0b00000001,    /*    Humidity oversampling (OSRS) to 1x                */
-                            0b00100100,    /*    Temperature oversample 1x, pressure overdsample 1x, mode 00    */
-                            0b00001000,    /*    Turn off heater                            */
-                            i2cPullupValue
-                    );
-
-    if (printHeadersAndCalibration)
-    {
-        SEGGER_RTT_WriteString(0, "\r\n\nBME680 Calibration Data: ");
-        for (uint8_t i = 0; i < kWarpSizesBME680CalibrationValuesCount; i++)
-        {
-            #ifdef WARP_BUILD_ENABLE_SEGGER_RTT_PRINTF
-            SEGGER_RTT_printf(0, "0x%02x", deviceBME680CalibrationValues[i]);
-            if (i < kWarpSizesBME680CalibrationValuesCount - 1)
-            {
-                SEGGER_RTT_WriteString(0, ", ");
-            }
-            else
-            {
-                SEGGER_RTT_WriteString(0, "\n\n");
-            }
-
-            OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-            #endif
-        }
-    }
-    #endif
-
-    #ifdef WARP_BUILD_ENABLE_DEVHDC1000
-    numberOfConfigErrors += writeSensorRegisterHDC1000(kWarpSensorConfigurationRegisterHDC1000Configuration,/* Configuration register    */
-                    (0b1010000<<8),
-                    i2cPullupValue
-                    );
-    #endif
-
-    #ifdef WARP_BUILD_ENABLE_DEVCCS811
-    uint8_t        payloadCCS811[1];
-    payloadCCS811[0] = 0b01000000;/* Constant power, measurement every 250ms */
-    numberOfConfigErrors += configureSensorCCS811(payloadCCS811,
-                    i2cPullupValue
-                    );
-    #endif
-    #ifdef WARP_BUILD_ENABLE_DEVBMX055
-    numberOfConfigErrors += configureSensorBMX055accel(0b00000011,/* Payload:+-2g range */
-                    0b10000000,/* Payload:unfiltered data, shadowing enabled */
-                    i2cPullupValue
-                    );
-    numberOfConfigErrors += configureSensorBMX055mag(0b00000001,/* Payload:from suspend mode to sleep mode*/
-                    0b00000001,/* Default 10Hz data rate, forced mode*/
-                    i2cPullupValue
-                    );
-    numberOfConfigErrors += configureSensorBMX055gyro(0b00000100,/* +- 125degrees/s */
-                    0b00000000,/* ODR 2000 Hz, unfiltered */
-                    0b00000000,/* normal mode */
-                    0b10000000,/* unfiltered data, shadowing enabled */
-                    i2cPullupValue
-                    );
-    #endif
-
-
-    if (printHeadersAndCalibration)
-    {
-        SEGGER_RTT_WriteString(0, "Measurement number, RTC->TSR, RTC->TPR,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-
-        #ifdef WARP_BUILD_ENABLE_DEVAMG8834
-        for (uint8_t i = 0; i < 64; i++)
-        {
-            #ifdef WARP_BUILD_ENABLE_SEGGER_RTT_PRINTF
-            SEGGER_RTT_printf(0, " AMG8834 %d,", i);
-            OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-            #endif
-        }
-        SEGGER_RTT_WriteString(0, " AMG8834 Temp,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-
-        #ifdef WARP_BUILD_ENABLE_DEVMMA8451Q
-        SEGGER_RTT_WriteString(0, " MMA8451 x, MMA8451 y, MMA8451 z,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVMAG3110
-        SEGGER_RTT_WriteString(0, " MAG3110 x, MAG3110 y, MAG3110 z, MAG3110 Temp,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVL3GD20H
-        SEGGER_RTT_WriteString(0, " L3GD20H x, L3GD20H y, L3GD20H z, L3GD20H Temp,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVBME680
-        SEGGER_RTT_WriteString(0, " BME680 Press, BME680 Temp, BME680 Hum,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVBMX055
-        SEGGER_RTT_WriteString(0, " BMX055acc x, BMX055acc y, BMX055acc z, BMX055acc Temp,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        SEGGER_RTT_WriteString(0, " BMX055mag x, BMX055mag y, BMX055mag z, BMX055mag RHALL,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        SEGGER_RTT_WriteString(0, " BMX055gyro x, BMX055gyro y, BMX055gyro z,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVCCS811
-        SEGGER_RTT_WriteString(0, " CCS811 ECO2, CCS811 TVOC, CCS811 RAW ADC value,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVHDC1000
-        SEGGER_RTT_WriteString(0, " HDC1000 Temp, HDC1000 Hum,");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        #endif
-        SEGGER_RTT_WriteString(0, " RTC->TSR, RTC->TPR, # Config Errors");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-        SEGGER_RTT_WriteString(0, "\n\n");
-        OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-    }
-
+    
+    
 
     while(1)
     {
-        #ifdef WARP_BUILD_ENABLE_SEGGER_RTT_PRINTF
-        SEGGER_RTT_printf(0, "%u, %d, %d,", readingCount, RTC->TSR, RTC->TPR);
-        #endif
-
-        #ifdef WARP_BUILD_ENABLE_DEVAMG8834
-        printSensorDataAMG8834(hexModeFlag);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVMMA8451Q
-        printSensorDataMMA8451Q(hexModeFlag);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVMAG3110
-        printSensorDataMAG3110(hexModeFlag);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVL3GD20H
-        printSensorDataL3GD20H(hexModeFlag);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVBME680
-        printSensorDataBME680(hexModeFlag);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVBMX055
-        printSensorDataBMX055accel(hexModeFlag);
-        printSensorDataBMX055mag(hexModeFlag);
-        printSensorDataBMX055gyro(hexModeFlag);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVCCS811
-        printSensorDataCCS811(hexModeFlag);
-        #endif
-        #ifdef WARP_BUILD_ENABLE_DEVHDC1000
-        printSensorDataHDC1000(hexModeFlag);
-        #endif
-    
-
-        #ifdef WARP_BUILD_ENABLE_SEGGER_RTT_PRINTF
-        SEGGER_RTT_printf(0, " %d, %d, %d\n", RTC->TSR, RTC->TPR, numberOfConfigErrors);
-        #endif
 
         if (menuDelayBetweenEachRun > 0)
         {
@@ -2599,9 +2429,46 @@ printAllSensors(bool printHeadersAndCalibration, bool hexModeFlag, int menuDelay
 }
 
 void
-getRawData(uint16_t *r, uint16_t *g, uint16_t *b, uint16_t *c)
+getRawData(volatile WarpI2CDeviceState *  i2cDeviceState,
+           WarpStatus  (* readSensorRegisterFunction)(uint8_t deviceRegister,  int numberOfBytes)) //uint16_t *r, uint16_t *g, uint16_t *b, uint16_t *c,
 {
+   
     
+    WarpStatus status;
+    
+    enableI2Cpins(32768);
+    
+    status = readSensorRegisterFunction(0x14, 2 /* numberOfBytes */);
+    if (status == kWarpStatusOK)
+    {
+        SEGGER_RTT_printf(0, "\n\r\t Clear --> %05d\n",
+        (i2cDeviceState->i2cBuffer[1]<<8)
+                      + i2cDeviceState->i2cBuffer[0]);
+    }
+    
+    status = readSensorRegisterFunction(0x16, 2 /* numberOfBytes */);
+    if (status == kWarpStatusOK)
+    {
+        SEGGER_RTT_printf(0, "\r\t Red --> %05d\n",
+        (i2cDeviceState->i2cBuffer[1]<<8)
+                      + i2cDeviceState->i2cBuffer[0]);
+    }
+    
+    status = readSensorRegisterFunction(0x18, 2 /* numberOfBytes */);
+    if (status == kWarpStatusOK)
+    {
+        SEGGER_RTT_printf(0, "\r\t Green --> %05d\n",
+        (i2cDeviceState->i2cBuffer[1]<<8)
+                      + i2cDeviceState->i2cBuffer[0]);
+    }
+    
+    status = readSensorRegisterFunction(0x1a, 2 /* numberOfBytes */);
+    if (status == kWarpStatusOK)
+    {
+        SEGGER_RTT_printf(0, "\r\t Blue --> %05d\n",
+        (i2cDeviceState->i2cBuffer[1]<<8)
+                      + i2cDeviceState->i2cBuffer[0]);
+    }
 }
 
 void

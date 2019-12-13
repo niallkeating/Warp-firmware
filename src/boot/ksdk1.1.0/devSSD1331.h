@@ -2,6 +2,10 @@
  *	See https://github.com/adafruit/Adafruit-SSD1331-OLED-Driver-Library-for-Arduino for the Arduino driver.
  */
 
+#ifndef WARP_BUILD_ENABLE_DEVSSD1331
+#define WARP_BUILD_ENABLE_DEVSSD1331
+#endif
+
 typedef enum
 {
 	kSSD1331ColororderRGB		= 1,

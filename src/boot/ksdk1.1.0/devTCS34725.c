@@ -227,9 +227,9 @@ configureSensorTCS34725()//WarpI2CDeviceState volatile *  TCS34725DeviceState)
     }
     */
     
-    //set integration time: 700ms = 0x00
+    //set integration time: 154ms = 0xC0 ; 700ms = 0x00 ;
     i2cWriteStatus3 = writeSensorRegisterTCS34725(0x01 /* register address ATIME */,
-                            0x00 /* ATIME value */);
+                            0x59 /* ATIME value */);
     
     
     i2cWriteStatus4 = writeSensorRegisterTCS34725(0x0F /* register address AGAIN */,

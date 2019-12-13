@@ -51,29 +51,11 @@
 
 #define WARP_FRDMKL03
 
-/*
-*    Comment out the header file to disable devices
-*/
-#ifndef WARP_FRDMKL03
-#    include "devBMX055.h"
-#    include "devMMA8451Q.h"
-#    include "devHDC1000.h"
-#    include "devMAG3110.h"
-#    include "devL3GD20H.h"
-#    include "devBME680.h"
-#    include "devCCS811.h"
-#    include "devAMG8834.h"
 
-//#include "devSI4705.h"
-//#include "devSI7021.h"
-//#include "devLPS25H.h"
-//#include "devADXL362.h"
-//#include "devPAN1326.h"
-//#include "devAS7262.h"
-//#include "devAS7263.h"
-//#include "devRV8803C7.h"
+#ifndef WARP_FRDMKL03
+
 #else
-#    include "devMMA8451Q.h"
+#    include "devSSD1331.h"
 #    include "devTCS34725.h"
 #endif
 
@@ -92,76 +74,16 @@
 #define                        kWarpConstantStringErrorSanity        "\rSanity check failed!"
 
 
-#ifdef WARP_BUILD_ENABLE_DEVADXL362
-volatile WarpSPIDeviceState            deviceADXL362State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVBMX055
-volatile WarpI2CDeviceState            deviceBMX055accelState;
-volatile WarpI2CDeviceState            deviceBMX055gyroState;
-volatile WarpI2CDeviceState            deviceBMX055magState;
-#endif
 
 #ifdef WARP_BUILD_ENABLE_DEVMMA8451Q
 volatile WarpI2CDeviceState            deviceMMA8451QState;
 #endif
 
-#ifdef WARP_BUILD_ENABLE_DEVLPS25H
-volatile WarpI2CDeviceState            deviceLPS25HState;
-#endif
 
-#ifdef WARP_BUILD_ENABLE_DEVHDC1000
-volatile WarpI2CDeviceState            deviceHDC1000State;
-#endif
 
-#ifdef WARP_BUILD_ENABLE_DEVMAG3110
-volatile WarpI2CDeviceState            deviceMAG3110State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVSI7021
-volatile WarpI2CDeviceState            deviceSI7021State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVL3GD20H
-volatile WarpI2CDeviceState            deviceL3GD20HState;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVBME680
-volatile WarpI2CDeviceState            deviceBME680State;
-volatile uint8_t                deviceBME680CalibrationValues[kWarpSizesBME680CalibrationValuesCount];
-#endif
 
 #ifdef WARP_BUILD_ENABLE_DEVTCS34725
 volatile WarpI2CDeviceState            deviceTCS34725State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVSI4705
-volatile WarpI2CDeviceState            deviceSI4705State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVCCS811
-volatile WarpI2CDeviceState            deviceCCS811State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVAMG8834
-volatile WarpI2CDeviceState            deviceAMG8834State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVPAN1326
-volatile WarpUARTDeviceState            devicePAN1326BState;
-volatile WarpUARTDeviceState            devicePAN1323ETUState;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVAS7262
-volatile WarpI2CDeviceState            deviceAS7262State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVAS7263
-volatile WarpI2CDeviceState            deviceAS7263State;
-#endif
-
-#ifdef WARP_BUILD_ENABLE_DEVRV8803C7
-volatile WarpI2CDeviceState            deviceRV8803C7State;
 #endif
 
 /*

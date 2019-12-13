@@ -57,71 +57,196 @@ extern volatile uint32_t		gWarpI2cTimeoutMilliseconds;
 extern volatile uint32_t		gWarpSupplySettlingDelayMilliseconds;
 
 
-
 void
 initTCS34725(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer)
 {
-	deviceStatePointer->i2cAddress	= i2cAddress;
-	deviceStatePointer->signalType	= (kWarpTypeMaskColor | kWarpTypeMaskTemperature);
+    deviceStatePointer->i2cAddress    = i2cAddress;
+    deviceStatePointer->signalType    = (kWarpTypeMaskColor | kWarpTypeMaskTemperature);
 
-	return;
+    return;
 }
+
+WarpStatus
+writeSensorRegisterTCS34725(uint8_t deviceRegister, uint8_t payload)
+{
+    uint8_t        payloadByte[1], commandByte[1];
+    i2c_status_t    status1, status2;
+
+    if (deviceRegister > 0x1D)
+    {
+        return kWarpStatusBadDeviceCommand;
+    }
+
+    i2c_device_t slave =
+    {
+        .address = deviceTCS34725State.i2cAddress,
+        .baudRate_kbps = gWarpI2cBaudRateKbps
+    };
+
+    
+    commandByte[0] = 0x80 + deviceRegister;
+    payloadByte[0] = payload;
+
+    status1 = I2C_DRV_MasterSendDataBlocking(
+                            0 /* I2C peripheral instance */,
+                            &slave,
+                            commandByte,
+                            1,
+                            payloadByte,
+                            1,
+                            gWarpI2cTimeoutMilliseconds);
+
+    if (status1 != kStatus_I2C_Success)
+    {
+        return kWarpStatusDeviceCommunicationFailed;
+    }
+
+    return kWarpStatusOK;
+}
+
+
+
 
 WarpStatus
 readSensorRegisterTCS34725(uint8_t deviceRegister)
 {
+    /*
+     *    From manual, page 17 (bottom): First write to specify register address, then read.
+     *
+     *    See fields of COMMAND register on page 18. We write the bit pattern 1000 0000
+     *    to specify that this is a command write for subsequent repeated byte protocol
+     *    transactions (and special function flags in lower nybble ignored).
+     */
+    
 	uint8_t		cmdBuf[1] = {0xFF};
 	i2c_status_t	status1, status2;
+    
+    i2c_device_t slave =
+    {
+        .address = deviceTCS34725State.i2cAddress,
+        .baudRate_kbps = gWarpI2cBaudRateKbps
+    };
+
+    cmdBuf[0] = 0x80 + deviceRegister;
+    
+	switch (deviceRegister)
+    {
+        case 0x00: case 0x01: case 0x03: case 0x04:
+        case 0x05: case 0x06: case 0x07: case 0x0c:
+        case 0x0d: case 0x0f: case 0x12: case 0x13:
+        {
+            cmdBuf[0] = 0x80 + deviceRegister; //3 MSBs indicate only look at 'deviceregister'
+            
+            status1 = I2C_DRV_MasterSendDataBlocking(
+                                    0 /* I2C peripheral instance */,
+                                    &slave,
+                                    cmdBuf,
+                                    1,
+                                    NULL,
+                                    0,
+                                    gWarpI2cTimeoutMilliseconds);
+
+            status2 = I2C_DRV_MasterReceiveDataBlocking(
+                                    0 /* I2C peripheral instance */,
+                                    &slave,
+                                    NULL,//cmdBuf,
+                                    0,//1,
+                                    (uint8_t *)deviceTCS34725State.i2cBuffer,
+                                    1,
+                                    gWarpI2cTimeoutMilliseconds);
 
 
-	if (deviceRegister > 0x1D)
-	{
-		return kWarpStatusBadDeviceCommand;
-	}
+            if ((status1 != kStatus_I2C_Success) || (status2 != kStatus_I2C_Success))
+            {
+                return kWarpStatusDeviceCommunicationFailed;
+            }
+            
+            break;
+        }
+        
+        case 0x14: case 0x16: case 0x18: case 0x1a:
+        
+        {
+            cmdBuf[0] = 0x80 + deviceRegister; //now autoincrement the registers (so MSBs relating to LSBs are always read)
+            
+            status1 = I2C_DRV_MasterSendDataBlocking(
+                                    0 /* I2C peripheral instance */,
+                                    &slave,
+                                    cmdBuf,
+                                    1,
+                                    NULL,
+                                    0,
+                                    gWarpI2cTimeoutMilliseconds);
 
-	i2c_device_t slave =
-	{
-		.address = deviceTCS34725State.i2cAddress,
-		.baudRate_kbps = gWarpI2cBaudRateKbps
-	};
-
-
-	cmdBuf[0] = deviceRegister;
-
-
-	/*
-	 *	From manual, page 17 (bottom): First write to specify register address, then read.
-	 *
-	 *	See fields of COMMAND register on page 18. We write the bit pattern 1000 0000
-	 *	to specify that this is a command write for subsequent repeated byte protocol
-	 *	transactions (and special function flags in lower nybble ignored).
-	 */
-	cmdBuf[0] = 0x80;
-
-	status1 = I2C_DRV_MasterSendDataBlocking(
-							0 /* I2C peripheral instance */,
-							&slave,
-							cmdBuf,
-							1,
-							NULL,
-							0,
-							gWarpI2cTimeoutMilliseconds);
-
-	cmdBuf[0] = deviceRegister;
-	status2 = I2C_DRV_MasterReceiveDataBlocking(
-							0 /* I2C peripheral instance */,
-							&slave,
-							cmdBuf,
-							1,
-							(uint8_t *)deviceTCS34725State.i2cBuffer,
-							1,
-							gWarpI2cTimeoutMilliseconds);
+            status2 = I2C_DRV_MasterReceiveDataBlocking(
+                                    0 /* I2C peripheral instance */,
+                                    &slave,
+                                    NULL,
+                                    0,
+                                    (uint8_t *)deviceTCS34725State.i2cBuffer,
+                                    2,
+                                    gWarpI2cTimeoutMilliseconds);
 
 
-	if ((status1 != kStatus_I2C_Success) || (status2 != kStatus_I2C_Success))
-	{
-		return kWarpStatusDeviceCommunicationFailed;
-	}
+            if ((status1 != kStatus_I2C_Success) || (status2 != kStatus_I2C_Success))
+            {
+                return kWarpStatusDeviceCommunicationFailed;
+            }
+            
+            break;
+        }
+        
+        default:
+        {
+            return kWarpStatusBadDeviceCommand;
+        }
+    }
+
+	
 
 	return kWarpStatusOK;
+}
+
+WarpStatus
+configureSensorTCS34725()//WarpI2CDeviceState volatile *  TCS34725DeviceState)
+{
+    //WarpStatus    i2cReadStatus;
+    WarpStatus    i2cWriteStatus1, i2cWriteStatus2, i2cWriteStatus3, i2cWriteStatus4 ;
+   
+    /*
+    //Check communication is working:
+    i2cReadStatus = readSensorRegisterTCS34725(0x12); //read ID register
+    
+    if (TCS34725DeviceState->i2cBuffer[0] != 0x44)
+    {
+        SEGGER_RTT_WriteString(0, "Bad connection to device TCS34725");
+    }
+    else if (TCS34725DeviceState->i2cBuffer[0] == 0x44)
+    {
+        SEGGER_RTT_WriteString(0, "Connected to device TCS34725");
+    }
+    */
+    
+    //set integration time: 700ms = 0x00
+    i2cWriteStatus3 = writeSensorRegisterTCS34725(0x01 /* register address ATIME */,
+                            0x00 /* ATIME value */);
+    
+    
+    i2cWriteStatus4 = writeSensorRegisterTCS34725(0x0F /* register address AGAIN */,
+                            0x00 /* AGAIN value */);
+    
+    //Enable PON
+    i2cWriteStatus1 = writeSensorRegisterTCS34725(0x00 /* register address ENABLE */,
+                            0x01 /* ENABLE value */);
+    
+    OSA_TimeDelay(3); //2.4ms delay for warm up after PON enabled
+    
+    //Enable PON and AEN (ADC turn on)
+    i2cWriteStatus2 = writeSensorRegisterTCS34725(0x00 /* register address ENABLE */,
+    0x03 /* ENABLE value */);
+    
+    OSA_TimeDelay(700); //Maximum integration time such that no readings can be taken before these are set
+    
+    
+    return (i2cWriteStatus1 | i2cWriteStatus2 | i2cWriteStatus3 | i2cWriteStatus4);
 }

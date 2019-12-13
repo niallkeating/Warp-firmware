@@ -39,8 +39,10 @@
 #define WARP_BUILD_ENABLE_DEVTCS34725
 #endif
 
+WarpStatus  writeSensorRegisterTCS34725(uint8_t deviceRegister, uint8_t payload);
 void		initTCS34725(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer);
 WarpStatus	readSensorRegisterTCS34725(uint8_t deviceRegister, int numberOfBytes);
+WarpStatus  configureSensorTCS34725();//WarpI2CDeviceState volatile *  TCS34725DeviceState);
 WarpStatus	readSensorSignalTCS34725(WarpTypeMask signal,
 					WarpSignalPrecision precision,
 					WarpSignalAccuracy accuracy,

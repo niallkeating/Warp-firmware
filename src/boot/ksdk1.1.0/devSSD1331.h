@@ -47,3 +47,4 @@ typedef enum
 } SSD1331Commands;
 
 int	devSSD1331init(void);
+int colourblock(uint8_t r ,uint8_t g, uint8_t b);

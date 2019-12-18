@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "fsl_misc_utilities.h"
 #include "fsl_device_registers.h"
@@ -95,6 +96,25 @@ volatile spi_master_user_config_t        spiUserConfig;
 volatile lpuart_user_config_t             lpuartUserConfig;
 volatile lpuart_state_t             lpuartState;
 
+
+/*
+kWarpPinButton1                 = GPIO_MAKE_PIN(HW_GPIOB, 10);       //button pins for final project
+
+kWarpPinButton2                 = GPIO_MAKE_PIN(HW_GPIOB, 7);
+
+kWarpPinButton3                 = GPIO_MAKE_PIN(HW_GPIOB, 6);
+*/
+
+gpio_input_pin_user_config_t inputpin =
+{
+    .pinName = GPIO_MAKE_PIN(HW_GPIOB, 10),
+    .config.isPullEnable = true,
+    .config.pullSelect = kPortPullUp,
+    .config.isPassiveFilterEnabled = false,
+    .config.interrupt = kPortIntDisabled
+};
+
+
 /*
  *    TODO: move magic default numbers into constant definitions.
  */
@@ -122,7 +142,8 @@ void                    repeatRegisterReadForDeviceAndAddress(WarpSensorDevice w
                                 int spinDelay, int repetitionsPerAddress, uint16_t sssupplyMillivolts,
                                 uint16_t adaptiveSssupplyMaxMillivolts, uint8_t referenceByte);
 void                    getRawData(volatile WarpI2CDeviceState *  i2cDeviceState,
-                                WarpStatus  (* readSensorRegisterFunction)(uint8_t deviceRegister,  int numberOfBytes));
+                                WarpStatus  (* readSensorRegisterFunction)(uint8_t deviceRegister,  int numberOfBytes),
+                                uint8_t *  r, uint8_t *  g, uint8_t *  b);
 int                    char2int(int character);
 void                    enableSssupply(uint16_t voltageMillivolts);
 void                    disableSssupply(void);
@@ -139,6 +160,9 @@ void                    printAllSensors(bool printHeadersAndCalibration, bool he
 WarpStatus                writeByteToI2cDeviceRegister(uint8_t i2cAddress, bool sendCommandByte, uint8_t commandByte, bool sendPayloadByte, uint8_t payloadByte);
 WarpStatus                writeBytesToSpi(uint8_t *  payloadBytes, int payloadLength);
 
+
+
+uint32_t                readpin(void);
 
 void                    warpLowPowerSecondsSleep(uint32_t sleepSeconds, bool forceAllPinsIntoLowPowerState);
 
@@ -185,6 +209,16 @@ clockManagerCallbackRoutine(clock_notify_struct_t *  notify, void *  callbackDat
     return result;
 }
 
+
+uint32_t
+readpin(void)
+{
+    uint32_t pins_in;
+    pins_in = GPIO_DRV_ReadPinInput(GPIO_MAKE_PIN(HW_GPIOB, 10));
+    SEGGER_RTT_printf(0, "\r\t Pins in --> %32b\n", pins_in);
+    
+    return pins_in;
+};
 
 /*
  *    Override the RTC IRQ handler
@@ -1065,6 +1099,8 @@ main(void)
     RTC_DRV_SetDatetime(0, &warpBootDate);
 
 
+    //Setup gpio input pin
+    //GPIO_DRV_InputPinInit(&inputpin);
 
     /*
      *    Setup Power Manager Driver
@@ -1204,6 +1240,9 @@ main(void)
     initAS7263(    0x49    /* i2cAddress */,    &deviceAS7263State    );
 #endif
 
+#ifdef WARP_BUILD_ENABLE_DEVSSD1331
+    devSSD1331init();
+#endif
 
 #ifdef WARP_BUILD_ENABLE_DEVRV8803C7
   initRV8803C7(0x32 /* i2cAddress */, &deviceRV8803C7State);
@@ -2378,7 +2417,55 @@ main(void)
                 
             case ' ':
             {
-                getRawData(&deviceTCS34725State, &readSensorRegisterTCS34725);
+                //colourblock(255, 0, 0);
+                //OSA_TimeDelay(1000);
+                //colourblock(0, 255, 0);
+                //OSA_TimeDelay(1000);
+                //colourblock(0, 0, 255);
+                //OSA_TimeDelay(1000);
+                //colourblock(0,0,0);
+                //OSA_TimeDelay(2000);
+                
+                //uint8_t r, b, g;
+                
+                //getRawData(&deviceTCS34725State, &readSensorRegisterTCS34725, &r, &g, &b);
+                
+                //disableI2Cpins();
+                
+                //SEGGER_RTT_printf(0, "\n\r\t Red --> %05d\n", r);
+                //SEGGER_RTT_printf(0, "\r\t Green --> %05d\n", g);
+                //SEGGER_RTT_printf(0, "\r\t Blue --> %05d\n", b);
+                
+                
+                //colourblock(r, g, b);
+                
+                GPIO_DRV_ClearPinOutput(GPIO_MAKE_PIN(HW_GPIOB, 13));
+                OSA_TimeDelay(1000);
+                GPIO_DRV_SetPinOutput(GPIO_MAKE_PIN(HW_GPIOB, 13));
+                
+                uint32_t button_1, button_2, button_3, button_4;
+                button_1 = GPIO_DRV_ReadPinInput(GPIO_MAKE_PIN(HW_GPIOB, 7));
+                button_2 = GPIO_DRV_ReadPinInput(GPIO_MAKE_PIN(HW_GPIOB, 6));
+                button_3 = GPIO_DRV_ReadPinInput(GPIO_MAKE_PIN(HW_GPIOB, 1));
+                button_4 = GPIO_DRV_ReadPinInput(GPIO_MAKE_PIN(HW_GPIOB, 2));
+                
+                OSA_TimeDelay(1000);
+                
+                SEGGER_RTT_printf(0, "\n\r\t Button 1 --> %d\n", button_1);
+                SEGGER_RTT_printf(0, "\n\r\t Button 2 --> %d\n", button_2);
+                SEGGER_RTT_printf(0, "\n\r\t Button 3 --> %d\n", button_3);
+                SEGGER_RTT_printf(0, "\n\r\t Button 4 --> %d\n", button_4);
+                
+                //enableI2Cpins(menuI2cPullupValue);
+                
+                
+               /* while(1)
+                {
+                    //pins_in = GPIO_DRV_ReadPinInput(kWarpPinButton1);
+                    //OSA_TimeDelay(1);
+                    SEGGER_RTT_printf(0, "\r\t Pins in --> %32b\n", pins_in);
+                }
+                */
                    
             }
 
@@ -2430,10 +2517,11 @@ printAllSensors(bool printHeadersAndCalibration, bool hexModeFlag, int menuDelay
 
 void
 getRawData(volatile WarpI2CDeviceState *  i2cDeviceState,
-           WarpStatus  (* readSensorRegisterFunction)(uint8_t deviceRegister,  int numberOfBytes)) //uint16_t *r, uint16_t *g, uint16_t *b, uint16_t *c,
+           WarpStatus  (* readSensorRegisterFunction)(uint8_t deviceRegister,  int numberOfBytes),
+            uint8_t *r, uint8_t *g, uint8_t *b)
 {
+    uint16_t sum, r_raw, b_raw, g_raw;
    
-    
     WarpStatus status;
     
     enableI2Cpins(32768);
@@ -2441,34 +2529,35 @@ getRawData(volatile WarpI2CDeviceState *  i2cDeviceState,
     status = readSensorRegisterFunction(0x14, 2 /* numberOfBytes */);
     if (status == kWarpStatusOK)
     {
-        SEGGER_RTT_printf(0, "\n\r\t Clear --> %05d\n",
-        (i2cDeviceState->i2cBuffer[1]<<8)
-                      + i2cDeviceState->i2cBuffer[0]);
+        sum = (i2cDeviceState->i2cBuffer[1]<<8) + i2cDeviceState->i2cBuffer[0];
+        SEGGER_RTT_printf(0, "\n\r\t Clear --> %05d\n", sum);
     }
     
     status = readSensorRegisterFunction(0x16, 2 /* numberOfBytes */);
     if (status == kWarpStatusOK)
     {
-        SEGGER_RTT_printf(0, "\r\t Red --> %05d\n",
-        (i2cDeviceState->i2cBuffer[1]<<8)
-                      + i2cDeviceState->i2cBuffer[0]);
+        r_raw = (i2cDeviceState->i2cBuffer[1]<<8) + i2cDeviceState->i2cBuffer[0];
+        SEGGER_RTT_printf(0, "\r\t Red --> %05d\n", r_raw);
+        
     }
     
     status = readSensorRegisterFunction(0x18, 2 /* numberOfBytes */);
     if (status == kWarpStatusOK)
     {
-        SEGGER_RTT_printf(0, "\r\t Green --> %05d\n",
-        (i2cDeviceState->i2cBuffer[1]<<8)
-                      + i2cDeviceState->i2cBuffer[0]);
+        g_raw = (i2cDeviceState->i2cBuffer[1]<<8) + i2cDeviceState->i2cBuffer[0];
+        SEGGER_RTT_printf(0, "\r\t Green --> %05d\n", g_raw);
     }
     
     status = readSensorRegisterFunction(0x1a, 2 /* numberOfBytes */);
     if (status == kWarpStatusOK)
     {
-        SEGGER_RTT_printf(0, "\r\t Blue --> %05d\n",
-        (i2cDeviceState->i2cBuffer[1]<<8)
-                      + i2cDeviceState->i2cBuffer[0]);
+        b_raw = (i2cDeviceState->i2cBuffer[1]<<8) + i2cDeviceState->i2cBuffer[0];
+        SEGGER_RTT_printf(0, "\r\t Blue --> %05d\n", b_raw);
     }
+    
+    *r = ceil((float)r_raw / sum * 255.0);
+    *b = ceil((float)b_raw / sum * 255.0);
+    *g = ceil((float)g_raw / sum * 255.0);
 }
 
 void

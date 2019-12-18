@@ -22,8 +22,6 @@
  *
  */
 
-
-
 gpio_output_pin_user_config_t	outputPins[] = {
 	/*
 	 *	Set unused pins as outputs
@@ -46,7 +44,8 @@ gpio_output_pin_user_config_t	outputPins[] = {
 		.config.slewRate = kPortSlowSlewRate,
 		.config.driveStrength = kPortLowDriveStrength,
 	},
-	{
+	
+    {
 		.pinName = kWarpPinTPS82740_VSEL1,
 		.config.outputLogic = 1,
 		.config.slewRate = kPortSlowSlewRate,
@@ -76,25 +75,25 @@ gpio_output_pin_user_config_t	outputPins[] = {
 		.config.slewRate = kPortSlowSlewRate,
 		.config.driveStrength = kPortLowDriveStrength,
 	},
-	{
-		.pinName = kWarpPinTS5A3154_IN,				/*	Was kWarpPinUnusedPTB6 in Warp v2			*/
+	/*{
+		.pinName = kWarpPinTS5A3154_IN,				//	Was kWarpPinUnusedPTB6 in Warp v2
 		.config.outputLogic = 1,
 		.config.slewRate = kPortSlowSlewRate,
 		.config.driveStrength = kPortLowDriveStrength,
 	},
 	{
-		.pinName = kWarpPinSI4705_nRST,				/*	Was kWarpPinUnusedPTB7 in Warp v2			*/
+		.pinName = kWarpPinSI4705_nRST,				//	Was kWarpPinUnusedPTB7 in Warp v2
 		.config.outputLogic = 1,
 		.config.slewRate = kPortSlowSlewRate,
 		.config.driveStrength = kPortLowDriveStrength,
-	},
+	},*/
 #ifndef WARP_BUILD_ENABLE_THERMALCHAMBERANALYSIS
-	{
-		.pinName = kWarpPinPAN1326_nSHUTD,			/*	Was kWarpPinUnusedPTB10 in Warp v2			*/
+	/*{
+		.pinName = kWarpPinPAN1326_nSHUTD,			//	Was kWarpPinUnusedPTB10 in Warp v2
 		.config.outputLogic = 1,
 		.config.slewRate = kPortSlowSlewRate,
 		.config.driveStrength = kPortLowDriveStrength,
-	},
+	},*/
 	{
 		.pinName = kWarpPinISL23415_nCS, 			/*	Was kWarpPinTPS82675_MODE in Warp v2			*/
 		.config.outputLogic = 1,
@@ -126,7 +125,7 @@ gpio_output_pin_user_config_t	outputPins[] = {
 		.config.slewRate = kPortSlowSlewRate,
 		.config.driveStrength = kPortLowDriveStrength,
 	},
-	{
+    {
 		.pinName = kWarpPinSPI_MISO,
 		.config.outputLogic = 1,
 		.config.slewRate = kPortSlowSlewRate,

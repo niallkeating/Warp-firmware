@@ -6,6 +6,8 @@
 #define WARP_BUILD_ENABLE_DEVSSD1331
 #endif
 
+#include <math.h>
+
 typedef enum
 {
 	kSSD1331ColororderRGB		= 1,
@@ -46,5 +48,23 @@ typedef enum
 	kSSD1331CommandVCOMH		= 0xBE,
 } SSD1331Commands;
 
+const uint8_t red[3] = {37, 0, 2};
+const uint8_t orange[3] = {55, 15, 0};
+const uint8_t yellow[3] = {53, 43, 0};
+const uint8_t green[3] = {0, 55, 0};
+const uint8_t blue[3] = {0, 0, 55};
+const uint8_t purple[3] = {27, 0, 26};
+
+const float normal[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+const float deuteranopia[3][3] = {{0.625, 0.375, 0}, {0.7, 0.3, 0}, {0, 0.3, 0.7}};
+const float protanopia[3][3] = {{0.567, 0.433, 0}, {0.558, 0.442, 0}, {0, 0.242, 0.758}};
+const float tritanopia[3][3] = {{0.95, 0.05, 0}, {0, 0.433, 0.567}, {0, 0.475, 0.525}};
+
 int	devSSD1331init(void);
-int colourblock(uint8_t r ,uint8_t g, uint8_t b);
+void rectangle(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *width, uint8_t start_pos);
+void spectrum(uint8_t *red_, uint8_t *orange_, uint8_t *yellow_, uint8_t *green_, uint8_t *blue_, uint8_t *purple_);
+void set_contrast(uint8_t *red_c, uint8_t *green_c, uint8_t *blue_c);
+float dot_prod(const float x[3], const uint8_t y[3]);
+void matrix_vector_mult(const float mat[3][3], const uint8_t vec[3], float *result);
+void float2colour(float* colour_raw, uint8_t* colour_processed, int len);
+void adjust_spectrum(const float blind_mat[3][3]);

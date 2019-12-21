@@ -1,5 +1,4 @@
 #include <stdint.h>
-
 #include "fsl_spi_master_driver.h"
 #include "fsl_port_hal.h"
 
@@ -7,6 +6,7 @@
 #include "gpio_pins.h"
 #include "warp.h"
 #include "devSSD1331.h"
+
 
 
 volatile uint8_t	inBuffer[1];
@@ -165,49 +165,127 @@ devSSD1331init(void)
     writeCommand(0x00);
     writeCommand(95);
     writeCommand(63);
-    writeCommand(145);
-    writeCommand(48);
-    writeCommand(67);
-    writeCommand(145);
-    writeCommand(48);
-    writeCommand(67);
-    writeCommand(0x81);
-    writeCommand(0xFF);
+    writeCommand(0x41);
     writeCommand(0x82);
-    writeCommand(0xFF);
+    writeCommand(0x85);
+    writeCommand(0x41);
+    writeCommand(0x82);
+    writeCommand(0x85);
+    writeCommand(0x81);
+    writeCommand(0x7F);
+    writeCommand(0x82);
+    writeCommand(0x7F);
     writeCommand(0x83);
-    writeCommand(0xFF);
+    writeCommand(0x7F);
     writeCommand(0x87);
     writeCommand(0xF);
 	//...
-
+    
 
 
 	return 0;
 }
 
-int
-colourblock(uint8_t r, uint8_t g, uint8_t b)
+
+void
+rectangle(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *width, uint8_t start_pos)
 {
-    writeCommand(kSSD1331CommandDRAWRECT);
-    writeCommand(0x00);
-    writeCommand(0x00);
-    writeCommand(95);
-    writeCommand(63);
-    writeCommand(r);
-    writeCommand(g);
-    writeCommand(b);
-    writeCommand(r);
-    writeCommand(g);
-    writeCommand(b);
-    writeCommand(0x81);
-    writeCommand(0xFF);
-    writeCommand(0x82);
-    writeCommand(0xFF);
-    writeCommand(0x83);
-    writeCommand(0xFF);
-    writeCommand(0x87);
-    writeCommand(0xF);
+    writeCommand(kSSD1331CommandDRAWRECT); //draw rectangle mode
+    writeCommand(start_pos); //starting column coordiantes
+    writeCommand(0); //starting row coordinates
+    writeCommand(*width + start_pos); //finishing column coordiantes
+    writeCommand(63); //finishing row coordinates
+    writeCommand(*r); //outline colours
+    writeCommand(*g);
+    writeCommand(*b);
+    writeCommand(*r); //fill colours
+    writeCommand(*g);
+    writeCommand(*b);
+
+}
+
+void
+spectrum(uint8_t *red_, uint8_t *orange_, uint8_t *yellow_, uint8_t *green_, uint8_t *blue_, uint8_t *purple_)
+{
+    uint8_t width = 16;
+    rectangle(&red_[0], &red_[1], &red_[2], &width, 0);
+    rectangle(&orange_[0], &orange_[1], &orange_[2], &width, 16);
+    rectangle(&yellow_[0], &yellow_[1], &yellow_[2], &width, 32);
+    rectangle(&green_[0], &green_[1], &green_[2], &width, 48);
+    rectangle(&blue_[0], &blue_[1], &blue_[2], &width, 64);
+    rectangle(&purple_[0], &purple_[1], &purple_[2], &width, 80);
     
-    return 0;
+}
+void
+set_contrast(uint8_t *red_c, uint8_t *green_c, uint8_t *blue_c)
+{
+    writeCommand(0x81);
+    writeCommand(*blue_c);
+    writeCommand(0x82);
+    writeCommand(*green_c);
+    writeCommand(0x83);
+    writeCommand(*red_c);
+
+}
+
+float
+dot_prod(const float x[3], const uint8_t y[3])
+{
+    float res = 0.0;
+    for (int i = 0; i<3; i++)
+    {
+        res += x[i] * (float)y[i];
+    }
+    return res;
+}
+
+void
+matrix_vector_mult(const float mat[3][3], const uint8_t vec[3], float *result)
+{
+    for (int i = 0; i<3; i++)
+    {
+        result[i] = dot_prod(mat[i], vec);
+    }
+}
+
+void
+float2colour(float* colour_raw, uint8_t* colour_processed, int len)
+{
+    for (int i=0; i<len; i++)
+    {
+        if(colour_raw[i] > 63.0)
+        {
+            colour_processed[i] = 63;
+        }
+        else if (colour_raw[i] < 0)
+        {
+            colour_processed[i] = 0;
+        }
+        else
+        {
+            colour_processed[i] = ceil(colour_raw[i]);
+        }
+    }
+}
+
+void
+adjust_spectrum(const float blind_mat[3][3])
+{
+    uint8_t red2[3], orange2[3], yellow2[3], green2[3], blue2[3], purple2[3];
+    float red_res[3], orange_res[3], yellow_res[3], green_res[3], blue_res[3], purple_res[3];
+    
+    matrix_vector_mult(blind_mat, red, red_res);
+    float2colour(red_res, red2, 3);
+    matrix_vector_mult(blind_mat, orange, orange_res);
+    float2colour(orange_res, orange2, 3);
+    matrix_vector_mult(blind_mat, yellow, yellow_res);
+    float2colour(yellow_res, yellow2, 3);
+    matrix_vector_mult(blind_mat, green, green_res);
+    float2colour(green_res, green2, 3);
+    matrix_vector_mult(blind_mat, blue, blue_res);
+    float2colour(blue_res, blue2, 3);
+    matrix_vector_mult(blind_mat, purple, purple_res);
+    float2colour(purple_res, purple2, 3);
+    
+    spectrum(red2, orange2, yellow2, green2, blue2, purple2);
 }

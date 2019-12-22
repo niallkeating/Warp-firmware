@@ -1,148 +1,71 @@
-# Baseline firmware for the [Warp](https://github.com/physical-computation/Warp-hardware) family of hardware platforms
-This is the firmware for the [Warp hardware](https://github.com/physical-computation/Warp-hardware) and its publicly available and unpublished derivatives. This firmware also runs on the Freescale/NXP FRDM KL03 evaluation board which we use for teaching at the University of Cambridge. When running on platforms other than Warp, only the sensors available in the corresponding hardware platform are accessible.
+# Development Aid for Colour Blind Children
+Developed by: \
+Niall Keating \
+Gonville and Caius College \
+njk37
 
-**Prerequisites:** You need an arm cross-compiler such as `arm-none-eabi-gcc` installed as well as a working `cmake` (installed, e.g., via `apt-get` on Linux or via [MacPorts](https://www.macports.org) on macOS). You will also need an installed copy of the SEGGER [JLink commander](https://www.segger.com/downloads/jlink/), `JlinkExe`, which is available for Linux, macOS, and Windows (here are direct links for downloading it for [macOS](https://www.segger.com/downloads/jlink/JLink_MacOSX.pkg), and [Linux tgz 64-bit](https://www.segger.com/downloads/jlink/JLink_Linux_x86_64.tgz)).
+# Introduction:
+For people with full colour sensitivity it is difficult to perceive a world with fewer colours in. This means it is very difficult to predict what colours will and won’t be visible and/or effective in being stimulating to a child with colour blindness and aid their development. This project aims to tackle that problem by having a device which is calibrated towards a particular child’s level of colour blindness, that can then can be used by a family member/teacher to sense the colour of an object/item, such that it can be translated into what the child effectively sees.
+
+The device therefore detects the RGB elements of a colour, converts them to RGB values for the OLED screen and then applies a filter such that the colour shown on the screen is a far closer representation to what the colour-blind person sees. The use of several push buttons also makes it very user friendly such that a child could easily use it. The device is capable of simulating 3 types of colour blindness: Deuteranopia (green-deficiency), Protanopia (red-deficiency) and Tritanopia (blue-deficiency).
+
+
+# Baseline firmware
+This firmware is modified from the original firmware for the [Warp hardware](https://github.com/physical-computation/Warp-hardware) family of hardware platforms. Thank you to Phillip Stanley-Marbel and Martin Rinard for making it's usage available for this project.
 
 ## 1.  Compiling the Warp firmware
-First, make sure the environment variable `ARMGCC_DIR` is set correctly (you can check whether this is set correctly, e.g., via `echo $ARMGCC_DIR`; if this is unfamiliar, see [here](http://homepages.uc.edu/~thomam/Intro_Unix_Text/Env_Vars.html) or [here](https://www2.cs.duke.edu/csl/docs/csh.html)). If your `arm-none-eabi-gcc` is in `/usr/local/bin/arm-none-eabi-gcc`, then you want to set  `ARMGCC_DIR` to `/usr/local`. If your shell is `tcsh`:
+Please follow the link above to the Warp Hardware for information on how to compile and run the firmware in conjunction with SEGGER's J-link software.
 
-	setenv ARMGCC_DIR <full path to the directory containing bin/arm-none-eabi-gcc>
-
-Alternatively, if your shell is `bash`
-
-	export ARMGCC_DIR=<full path to the directory containing bin/arm-none-eabi-gcc>
-
-(You can check what your shell is, e.g., via `echo $SHELL`.) Second, edit the jlink command file, `tools/scripts/jlink.commands` to include the correct path.
-
-Third, you should be able to build the Warp firmware by
-
-	cd build/ksdk1.1/
-	./build.sh
-
-This copies the files from `Warp/src/boot/ksdk1.1.0/` into the KSDK tree, builds, and converts the binary to SREC. See 	`Warp/src/boot/ksdk1.1.0/README.md` for more. _When editing source, edit the files in `Warp/src/boot/ksdk1.1.0/`, not the files in the build location, since the latter are overwritten during each build._
-
-Fourth, you will need two terminal windows. In one shell window, run the firmware downloader:
-
-	JLinkExe -device MKL03Z32XXX4 -if SWD -speed 100000 -CommanderScript ../../tools/scripts/jlink.commands
-
-In the other shell window, launch the JLink RTT client<sup>&nbsp;<a href="#Notes">See note 1 below</a></sup>:
+## 2. Interacting with the device
+Once the Firmware has been uploaded to the FRDMKL03 board, the user has the option of leaving the device connected to the compiling device and running 
 
 	JLinkRTTClient
+	
+This enables read-outs, explaining what is happening at each stage when a button is pressed. When taking colour readings and converting them, this also displays the filtered and raw values taken by the TCS34725 sensor.
 
-## 2. Using the Warp firmware on the FRDM KL03
-The SEGGER firmware allows you to use SEGGER’s JLink software to load your own firmware to the board, even without using their specialized JLink programming cables. You can find the SEGGER firmware at the SEGGER Page for [OpenSDA firmware](https://www.segger.com/products/debug-probes/j-link/models/other-j-links/opensda-sda-v2/).
+Alternatively, the board can still be used with just connection to a portable charger via it's USB cable making it portable. The layout of the board and buttons is very intuitve to help in this task.
+
+## 3. Breadboard button definitions:
+
+There are 4 buttons layed out in a cross style, each representing up, down, previous and next. To the right of the plus there is a fifth button, which is used as a 'select' feature.
+
+## 4a. Configuring the device
+
+On boot-up, the user is presented with a rainbow of colours, as a person with normal vision would see it. Clicking the up/down buttons on this spectrum adjusts the contrast/brightness across *all* the colours on the SSD1331 OLED device. 
+
+Using the previous/next buttons, the user can cycle through how that spectrum would be observed by someone with a type of colour blindness. The order of the colour blindness types are: Normal --> Deuteranopia (green-deficiency) --> Protanopia (red-deficiency) --> Tritanopia (blue-deficiency) --> Normal --> ... . 
+
+For the different colour-blindness filters used, the user can tailor the filter to a specific person's level of colour blindness by adjusting the contrast of the colour which that particular blindness type suggests a deficiency in (i.e. on the Deuteranopia filter, the up/down arrows adjust the green contrast, with the blue/red values constant). 
+
+Once the user is happy with the settings, they can press the select button to lock in the filter and contrast level set. (Note, selecting the 'normal' mode will select no filter)
+
+## 4b. Running tests
+With the settings locked in, colour-blindness conversions can begin. In order to take a reading, place the object you want to convert the colour of and place it up to the white light on the TCS34725 sensor. The optimal distance from the sensor is around 1cm, although distances up to 5cm should still be ok if the rest of the room is dark.
+
+To take the reading, press the select button again. This will light up the OLED as a block of colour, which is the colour of the object put up to the sensor, filtered by the chosen setting.
+
+To modify the setting, simply press the previous button. To go back to the normal vision setting, press next.
 
 
-## 3.  Editing the firmware
-The firmware is currently all in `src/boot/ksdk1.1.0/`, in particular, see `src/boot/ksdk1.1.0/warp-kl03-ksdk1.1-boot.c` and the per-sensor drivers in `src/boot/ksdk1.1.0/dev*.[c,h]`.
 
-The firmware builds on the Kinetis SDK. You can find more documentation on the Kinetis SDK in the document [doc/Kinetis SDK v.1.1 API Reference Manual.pdf](https://github.com/physical-computation/Warp-firmware/blob/master/doc/Kinetis%20SDK%20v.1.1%20API%20Reference%20Manual.pdf).
+## 5. Modifying the implementation
+The core of the interfacing is dictated by the main while loop within 
 
-The firmware is designed for the Warp hardware platform, but will also run on the Freeacale FRDM KL03 development board. In that case, the only driver which is relevant is the one for the MMA8451Q. For more details about the structure of the firmware, see [src/boot/ksdk1.1.0/README.md](src/boot/ksdk1.1.0/README.md).
+	src/boot/ksdk1.1.0/warp-kl03-ksdk1.1-boot.c
+	
+To see how the TCS34725 was configured and make any adjustments, please view the comments in 
 
-## 4.  Interacting with the boot menu
-When the firmware boots, you will be dropped into a menu with a rich set of commands. The Warp boot menu allows you to conduct most of the experiments you will likely need without modifying the firmware:
-````
-[ *				W	a	r	p	(rev. b)			* ]
-[  				      Cambridge / Physcomplab   				  ]
+	src/boot/ksdk1.1.0/devTCS34725.c
 
-	Supply=0mV,	Default Target Read Register=0x00
-	I2C=200kb/s,	SPI=200kb/s,	UART=1kb/s,	I2C Pull-Up=32768
+To modify any of the functions for configuring and displaying the OLED, please see the comments in
 
-	SIM->SCGC6=0x20000001		RTC->SR=0x10		RTC->TSR=0x5687132B
-	MCG_C1=0x42			MCG_C2=0x00		MCG_S=0x06
-	MCG_SC=0x00			MCG_MC=0x00		OSC_CR=0x00
-	SMC_PMPROT=0x22			SMC_PMCTRL=0x40		SCB->SCR=0x00
-	PMC_REGSC=0x00			SIM_SCGC4=0xF0000030	RTC->TPR=0xEE9
+	src/boot/ksdk1.1.0/devSSD1331.c
+	
+Finally, for modifying the underlying colour transformation matrices, dictating how the spectrums are created please view
 
-	0s in RTC Handler to-date,	0 Pmgr Errors
-Select:
-- 'a': set default sensor.
-- 'b': set I2C baud rate.
-- 'c': set SPI baud rate.
-- 'd': set UART baud rate.
-- 'e': set default register address.
-- 'f': write byte to sensor.
-- 'g': set default SSSUPPLY.
-- 'h': powerdown command to all sensors.
-- 'i': set pull-up enable value.
-- 'j': repeat read reg 0x00 on sensor #3.
-- 'k': sleep until reset.
-- 'l': send repeated byte on I2C.
-- 'm': send repeated byte on SPI.
-- 'n': enable SSSUPPLY.
-- 'o': disable SSSUPPLY.
-- 'p': switch to VLPR mode.
-- 'r': switch to RUN mode.
-- 's': power up all sensors.
-- 't': dump processor state.
-- 'u': set I2C address.
-- 'x': disable SWD and spin for 10 secs.
-- 'z': dump all sensors data.
-Enter selection> 
-````
-You can probe around the menu to figure out what to do. In brief, you will likely want:
+	src/boot/ksdk1.1.0/devSSD1331.h
 
-1. Menu item `b` to set the I2C baud rate.
-
-2. Menu item `r` to switch the processor from low-power mode (2MHz) to "run" mode (48MHz).
-
-3. Menu item `g` to set sensor supply voltage.
-
-4. Menu item `n` to turn on the voltage regulators.
-
-5. Menu item `z` to repeatedly read from all the sensors whose drivers are compiled into the build.
-
-*NOTE: In many cases, the menu expects you to type a fixed number of characters (e.g., 0000 or 0009 for zero and nine)<sup>&nbsp;<a href="#Notes">See note 1 below</a></sup>. If using the JLinkRTTClient, the menu interface eats your characters as you type them, and you should not hit RETURN after typing in text. On the other hand, if using `telnet` you have to hit return.*
-
-### Example 1: Dump all registers for a single sensor
-````
-Enter selection> j
-
-    Auto-increment from base address 0x01? ['0' | '1']> 0
-    Chunk reads per address (e.g., '1')> 1
-    Chatty? ['0' | '1']> 1
-    Inter-operation spin delay in milliseconds (e.g., '0000')> 0000
-    Repetitions per address (e.g., '0000')> 0000
-    Maximum voltage for adaptive supply (e.g., '0000')> 2500
-    Reference byte for comparisons (e.g., '3e')> 00
-````
-
-### Example 2: Stream data from all sensors
-This will perpetually stream data from the 90+ sensor dimensions at a rate of about 90-tuples per second. Use the following command sequence:
--	`b` (set the I2C baud rate to `0300` for 300 kb/s).
--	`r` (enable 48MHz "run" mode for the processor).
--	`g` (set sensor supply voltage to `3000` for 3000mV sensor supply voltage).
--	`n` (turn on the sensor supply regulators).
--	`z` (start to stream data from all sensors that can run at the chosen voltage and baud rate).
-
-## 5.  To update your fork
-From your local clone:
-
-	git remote add upstream https://github.com/physical-computation/Warp-firmware.git
-	git fetch upstream
-	git pull upstream master
-
-----
-
-### If you use Warp in your research, please cite it as:
-Phillip Stanley-Marbell and Martin Rinard. “A Hardware Platform for Efficient Multi-Modal Sensing with Adaptive Approximation”. ArXiv e-prints (2018). arXiv:1804.09241.
-
-**BibTeX:**
-```
-@ARTICLE{1804.09241,
-  author = {Stanley-Marbell, Phillip and Rinard, Martin},
-  title = {A Hardware Platform for Efficient Multi-Modal Sensing with Adaptive Approximation},
-  journal = {ArXiv e-prints},
-  archivePrefix = {arXiv},
-  eprint = {1804.09241},
-  year = 2018,
-}
-```
 
 ### Acknowledgements
-This research is supported by an Alan Turing Institute award TU/B/000096 under EPSRC grant EP/N510129/1, by Royal Society grant RG170136, and by EPSRC grants EP/P001246/1 and EP/R022534/1.
-
-----
-### Notes
-<sup>1</sup>&nbsp; On some Unix platforms, the `JLinkRTTClient` has a double echo of characters you type in. You can prevent this by configuring your terminal program to not echo the characters you type. Alternatively, rather than using the `JLinkRTTClient`, you can use a `telnet` program: `telnet localhost 19021`. This avoids the JLink RTT Client's "double echo" behavior but you will then need a carriage return (&crarr;) for your input to be sent to the board. Also see [Python SEGGER RTT library from Square, Inc.](https://github.com/square/pylink/blob/master/examples/rtt.py) (thanks to [Thomas Garry](https://github.com/tidge27) for the pointer).
+This firmware is based upon the the Warp-firmware: 
+Phillip Stanley-Marbell and Martin Rinard. “A Hardware Platform for Efficient Multi-Modal Sensing with Adaptive Approximation”. ArXiv e-prints (2018). arXiv:1804.09241.

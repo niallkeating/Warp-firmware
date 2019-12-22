@@ -105,7 +105,9 @@ writeSensorRegisterTCS34725(uint8_t deviceRegister, uint8_t payload)
 }
 
 
-
+/*
+ This can be called from the full implementation of the Warp Firmware boot file to read sensor data and configurations
+ */
 
 WarpStatus
 readSensorRegisterTCS34725(uint8_t deviceRegister)
@@ -163,7 +165,10 @@ readSensorRegisterTCS34725(uint8_t deviceRegister)
             
             break;
         }
-        
+        /*
+         cases to read clear, red, green, blue registers.
+         Get 16 bit precision so need case to read twice
+         */
         case 0x14: case 0x16: case 0x18: case 0x1a:
         
         {
@@ -212,22 +217,9 @@ configureSensorTCS34725()//WarpI2CDeviceState volatile *  TCS34725DeviceState)
 {
     //WarpStatus    i2cReadStatus;
     WarpStatus    i2cWriteStatus1, i2cWriteStatus2, i2cWriteStatus3, i2cWriteStatus4 ;
-   
-    /*
-    //Check communication is working:
-    i2cReadStatus = readSensorRegisterTCS34725(0x12); //read ID register
     
-    if (TCS34725DeviceState->i2cBuffer[0] != 0x44)
-    {
-        SEGGER_RTT_WriteString(0, "Bad connection to device TCS34725");
-    }
-    else if (TCS34725DeviceState->i2cBuffer[0] == 0x44)
-    {
-        SEGGER_RTT_WriteString(0, "Connected to device TCS34725");
-    }
-    */
-    
-    //set integration time: 154ms = 0xC0 ; 700ms = 0x00 ;
+    //set integration time: 154ms = 0xC0 ; 700ms = 0x00 ; 400ms = 0x59
+    //See TCS34725.pdf page 8 for how to calculate
     i2cWriteStatus3 = writeSensorRegisterTCS34725(0x01 /* register address ATIME */,
                             0x59 /* ATIME value */);
     

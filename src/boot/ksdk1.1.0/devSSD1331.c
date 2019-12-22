@@ -60,7 +60,9 @@ writeCommand(uint8_t commandByte)
 	return status;
 }
 
-
+/*
+ Initialisation sequence from previous coursework task
+ */
 
 int
 devSSD1331init(void)
@@ -161,7 +163,7 @@ devSSD1331init(void)
 	 */
     
     writeCommand(kSSD1331CommandDRAWRECT);
-    writeCommand(0x00);
+    writeCommand(0x00); //See rectangle function for description
     writeCommand(0x00);
     writeCommand(95);
     writeCommand(63);
@@ -171,6 +173,8 @@ devSSD1331init(void)
     writeCommand(0x41);
     writeCommand(0x82);
     writeCommand(0x85);
+    
+    //Setting the contrast to mid-values
     writeCommand(0x81);
     writeCommand(0x7F);
     writeCommand(0x82);
@@ -179,13 +183,16 @@ devSSD1331init(void)
     writeCommand(0x7F);
     writeCommand(0x87);
     writeCommand(0xF);
-	//...
+
     
 
 
 	return 0;
 }
 
+/*
+ Draw Rectangle function from SSD1331_1.2.pdf, section 9.2.2
+ */
 
 void
 rectangle(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *width, uint8_t start_pos)
@@ -204,6 +211,9 @@ rectangle(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *width, uint8_t start_pos)
 
 }
 
+/*
+ Draws out the rainbow/spectrum display given the set of colours
+ */
 void
 spectrum(uint8_t *red_, uint8_t *orange_, uint8_t *yellow_, uint8_t *green_, uint8_t *blue_, uint8_t *purple_)
 {
@@ -216,6 +226,10 @@ spectrum(uint8_t *red_, uint8_t *orange_, uint8_t *yellow_, uint8_t *green_, uin
     rectangle(&purple_[0], &purple_[1], &purple_[2], &width, 80);
     
 }
+
+/*
+ See section 9.1.3 of SSD1331_1.2.pdf
+ */
 void
 set_contrast(uint8_t *red_c, uint8_t *green_c, uint8_t *blue_c)
 {
@@ -228,6 +242,9 @@ set_contrast(uint8_t *red_c, uint8_t *green_c, uint8_t *blue_c)
 
 }
 
+/*
+ Dot product (for matrix vector multiplication)
+ */
 float
 dot_prod(const float x[3], const uint8_t y[3])
 {
@@ -239,6 +256,9 @@ dot_prod(const float x[3], const uint8_t y[3])
     return res;
 }
 
+/*
+ matrix vector multiplication (for multiplying RGB colour vector by colour transformation matrices)
+ */
 void
 matrix_vector_mult(const float mat[3][3], const uint8_t vec[3], float *result)
 {
@@ -248,6 +268,9 @@ matrix_vector_mult(const float mat[3][3], const uint8_t vec[3], float *result)
     }
 }
 
+/*
+ Converts calculated colours to a int from float - also ensures values don't exceed the 5 bit range
+ */
 void
 float2colour(float* colour_raw, uint8_t* colour_processed, int len)
 {
@@ -268,6 +291,9 @@ float2colour(float* colour_raw, uint8_t* colour_processed, int len)
     }
 }
 
+/*
+ Creates the selection spectrum for display, based off the desired colour transformation matrix
+ */
 void
 adjust_spectrum(const float blind_mat[3][3])
 {

@@ -56,8 +56,8 @@ const uint8_t blue[3] = {0, 0, 55};
 const uint8_t purple[3] = {27, 0, 26};
 
 const float normal[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-const float deuteranopia[3][3] = {{0.625, 0.375, 0}, {0.7, 0.3, 0}, {0, 0.3, 0.7}};
-const float protanopia[3][3] = {{0.567, 0.433, 0}, {0.558, 0.442, 0}, {0, 0.242, 0.758}};
+const float deuteranopia[3][3] = {{0.625, 0.375, 0}, {0.7, 0.3, 0}, {0, 0.3, 0.7}}; //0.375, 0
+const float protanopia[3][3] = {{0.567, 0.433, 0}, {0.558, 0.442, 0}, {0, 0.242, 0.758}}; //
 const float tritanopia[3][3] = {{0.95, 0.05, 0}, {0, 0.433, 0.567}, {0, 0.475, 0.525}};
 
 int	devSSD1331init(void);
